@@ -18,9 +18,9 @@ int main() {
     position array; //almacenar movimientos de CD
     int i;
 // ------------------------------------------------------------------------matrices
-    float **fric_matrix; //mapa friccion
-    float **localidad_matrix;//mapa con localidades (ubicacion)
-    float **IDW_matrix;
+    float* fric_matrix; //mapa friccion
+    float* localidad_matrix;//mapa con localidades (ubicacion)
+    float* IDW_matrix;
 // ------------------------------------------------------------------------mapas
     map<int, Raster::local> localidades;// mapa ubicacion localidades
     //estructura local contiene el no. de comunidad y su (x,y)
@@ -42,9 +42,8 @@ int main() {
     objrast.leer_localidades(localidad_matrix, rows, cols, localidades, cell_null, num_com);
     //valores iniciales
     IDW_matrix = objMeth.reset_Matrix(rows, cols, 0); //llena la matriz inicial del valor indicado
-    float**CD_matrix = new float*[rows];
-    for(row=0;row<rows;row++)
-        CD_matrix[row] = new float[cols];
+    float *CD_matrix = new float[rows*cols];
+
     //-------------------------------------------------------------------------------------------------------inicia calculo modelos
     biomass = biomass_requerida.begin();
     int start =int(biomass->first);
@@ -63,7 +62,7 @@ int main() {
                     array.key=0;
                     cont++;//localidades calculadas
                     CD_matrix=objMeth.cost_distance(fric_matrix, rows, cols, array, CD_matrix);
-                    objrast.matrix_to_tiff(CD_matrix, rows, cols,cont,"CD_");
+                    //objrast.matrix_to_tiff(CD_matrix, rows, cols,cont,"CD_");
                     cout<<"costo distancia "<<i<< " calculado"<<endl;
                     objMeth.IDW_test(biomass->second, CD_matrix, IDW_matrix, rows, cols, exp, cell_null);
 
@@ -74,9 +73,10 @@ int main() {
     // ---------------agregar valores nulos en la ubicacion de las localidade
     ubicacion = localidades.begin();
     while (ubicacion != localidades.end()) {
-        IDW_matrix[ubicacion->second.row][ubicacion->second.col] = cell_null;
+        IDW_matrix[(cols * ubicacion->second.row)+ubicacion->second.col] = cell_null;
         ubicacion++;
     }
+
     objrast.matrix_to_tiff(IDW_matrix, rows, cols,cont,"IDW_");//crea tiff de IDW de todas las localidades calculadas
     clock_t end_global = clock();//termina tiempo global
     double duration = (double)(end_global - start_global) / (double) CLOCKS_PER_SEC;//calcula tiempo de ejecucion

@@ -7,7 +7,7 @@
 
 double adfGeoTransform[6];
 //-------------------------------------------------------------------------------------------------------------------------
-float** Raster::read_tif_matrix(std::string file,int &rows, int &cols, int &scale,int &cell_null){
+float* Raster::read_tif_matrix(std::string file,int &rows, int &cols, int &scale,int &cell_null){
     int row,col;//iteradores matriz
     GDALDataset *dataset;
     GDALAllRegister();
@@ -25,11 +25,7 @@ float** Raster::read_tif_matrix(std::string file,int &rows, int &cols, int &scal
     dataset->GetGeoTransform( adfGeoTransform );
     scale = adfGeoTransform[1];
     cell_null = poBand->GetNoDataValue();  //read null value of cell
-    float** matrix;
-    matrix = new float*[rows];
-    for( row = 0; row< rows; ++row)
-        matrix[row] = new float[cols];
-
+    float *matrix = new float[rows * cols];
     float *pBuf = new float[rows * cols];
 
     poBand->RasterIO(GF_Read, 0, 0, cols, rows, pBuf, cols, rows, GDT_Float32, 0, 0);
@@ -38,7 +34,7 @@ float** Raster::read_tif_matrix(std::string file,int &rows, int &cols, int &scal
     for (row = 0; row < rows; row++)
         for ( col = 0; col < cols; col++){
             location = (cols * (row)) + col;
-            matrix[row][col] = *(pBuf+location);
+            matrix[(cols*row)+col] = *(pBuf+location);
         }
     printf("Columnas: %d\n", cols);
     printf("Renglones: %d\n", rows);
@@ -46,37 +42,38 @@ float** Raster::read_tif_matrix(std::string file,int &rows, int &cols, int &scal
     return matrix;
 }
 //-------------------------------------------------------------------------------------------------------------------------
-void Raster::print_raster(float **matrix, int rows, int cols) {
+void Raster::print_raster(float *matrix, int rows, int cols) {
     printf("Imprimiento matriz \n");
     for(int row=0; row< rows; row++){
         for(int col =0; col < cols; col++){
-            printf(" %f ",matrix[row][col]);
+            printf(" %f ",matrix[(cols*row)+col]);
         }
         printf("\n");
     }
 }
 //-------------------------------------------------------------------------------------------------------------------------
-int Raster::contar_comunidades(float **mapa_local, int rows, int cols,int cell_null) {
+int Raster::contar_comunidades(float *mapa_local, int rows, int cols,int cell_null) {
     int count=0;
     for(int row=0;row<rows;row++)
         for(int col=0;col<cols;col++){
-            if(mapa_local[row][col] != cell_null)
+            if(mapa_local[(cols*row)+col] != cell_null) {
                 count++;
+            }
         }
     printf("Total de comunidades es %d\n",count);
     return count;
 }
 
 //-------------------------------------------------------------------------------------------------------------------------
-void Raster::leer_localidades(float **map_local,int rows, int cols, map<int,local> &local_ord,int cell_null,int num_local) {
+void Raster::leer_localidades(float *map_local,int rows, int cols, map<int,local> &local_ord,int cell_null,int num_local) {
     local array;
     int local_1=0;
     for(int row=0;row<rows;row++){
         for(int col=0;col<cols;col++){
-            if(map_local[row][col] != cell_null) {
+            if(map_local[(cols*row)+col]  != cell_null) {
                 array.row = row;
                 array.col = col;
-                local_ord[(int)map_local[row][col]] = array;
+                local_ord[(int)map_local[(cols*row)+col]] = array;
                 local_1 ++ ;
             }
         }
@@ -113,7 +110,7 @@ void Raster::carga_requisitos(string name,map <int, float> &req_map){
     }
 }
 //-------------------------------------------------------------------------------------------------------------------------
-void Raster::matrix_to_tiff(float **output_raster, int rows, int cols, int count,string name) {
+void Raster::matrix_to_tiff(float *output_raster, int rows, int cols, int count,string name) {
     int row,col;//iteradores
     GDALDataset *poDstDS;
     GDALDriver *poDriver;
@@ -127,11 +124,11 @@ void Raster::matrix_to_tiff(float **output_raster, int rows, int cols, int count
     float *pBuf = new float[rows * cols], maxVal = 0;
     for(row= 0; row < rows; row++) {
         for (col = 0; col < cols; col++) {
-            pBuf[row * cols + col] = output_raster[row][col];
-            if(output_raster[row][col] <= 0.0)
+            pBuf[(row * cols) + col] = output_raster[(cols*row)+col];
+            if(output_raster[(cols*row)+col] <= 0.0)
                 pBuf[row * cols + col] = -9999;
-            if(output_raster[row][col] > maxVal)
-                maxVal = output_raster[row][col];
+            if(output_raster[(cols*row)+col] > maxVal)
+                maxVal = output_raster[(cols*row)+col];
         }
     }
 
