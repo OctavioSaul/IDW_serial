@@ -32,11 +32,11 @@ int main() {
     fric_matrix = objrast.read_tif_matrix("/home/sperez/modelos/Kenia/general/fricc_singeo0.tif", rows, cols, scale, cell_null);
     //---------------------mapa localidades
     printf("----matriz localidades\n");
-    localidad_matrix = objrast.read_tif_matrix("/home/sperez/modelos/Kenia/20_comunidades/locs_20_int.tif", rows, cols, scale,cell_null);
+    localidad_matrix = objrast.read_tif_matrix("/home/sperez/modelos/Kenia/5_comunidades/locs_5_int.tif", rows, cols, scale,cell_null);
     //obtenemos el numero de comunidades
     num_com = objrast.contar_comunidades(localidad_matrix, rows, cols, cell_null);
     //---------------------guardamos los requisitos de las comunidades en un mapa
-    objrast.carga_requisitos("/home/sperez/modelos/Kenia/20_comunidades/fwuse_20.csv", biomass_requerida);
+    objrast.carga_requisitos("/home/sperez/modelos/Kenia/5_comunidades/fwuse_5.csv", biomass_requerida);
 
     // guardamos las localidades en un mapa para ordenarlas
     objrast.leer_localidades(localidad_matrix, rows, cols, localidades, cell_null, num_com);
@@ -45,6 +45,7 @@ int main() {
     float *CD_matrix = new float[rows*cols];
 
     //-------------------------------------------------------------------------------------------------------inicia calculo modelos
+    clock_t start_calculo = clock();
     biomass = biomass_requerida.begin();
     int start =int(biomass->first);
     biomass = biomass_requerida.end();
@@ -63,13 +64,15 @@ int main() {
                     cont++;//localidades calculadas
                     CD_matrix=objMeth.cost_distance(fric_matrix, rows, cols, array, CD_matrix);
                     //objrast.matrix_to_tiff(CD_matrix, rows, cols,cont,"CD_");
-                    cout<<"costo distancia "<<i<< " calculado"<<endl;
                     objMeth.IDW_test(biomass->second, CD_matrix, IDW_matrix, rows, cols, exp, cell_null);
 
                 }
             }
         }
     }
+    clock_t end_calculo = clock();//termina tiempo global
+    double duration = (double)(end_calculo - start_calculo) / (double) CLOCKS_PER_SEC;//calcula tiempo de ejecucion
+    printf("tiempo calculo: %lf segundos \n", duration);
     // ---------------agregar valores nulos en la ubicacion de las localidade
     ubicacion = localidades.begin();
     while (ubicacion != localidades.end()) {
@@ -79,8 +82,9 @@ int main() {
 
     objrast.matrix_to_tiff(IDW_matrix, rows, cols,cont,"IDW_");//crea tiff de IDW de todas las localidades calculadas
     clock_t end_global = clock();//termina tiempo global
-    double duration = (double)(end_global - start_global) / (double) CLOCKS_PER_SEC;//calcula tiempo de ejecucion
+    duration = (double)(end_global - start_global) / (double) CLOCKS_PER_SEC;//calcula tiempo de ejecucion
     printf("tiempo global: %lf segundos \n", duration);
     return 0;
+
 }
 
